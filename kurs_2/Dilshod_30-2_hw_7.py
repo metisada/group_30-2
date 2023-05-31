@@ -1,0 +1,131 @@
+import sqlite3
+
+def create_connection(database):
+    conn = None
+    try:
+        conn = sqlite3.connect(database)
+        return conn
+    except sqlite3.Error as err:
+        print("Ошибка при создании соединения с базой данных:", err)
+    return conn
+
+def create_table(conn):
+    try:
+        c = conn.cursor()
+        c.execute('''CREATE TABLE IF NOT EXISTS products (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        product_title TEXT NOT NULL,
+                        price REAL DEFAULT 0.0 NOT NULL,
+                        quantity INTEGER DEFAULT 0 NOT NULL
+                    )''')
+
+        c.execute("ALTER TABLE products ADD COLUMN product_title TEXT NOT NULL CHECK(length(product_title) <= 200)")
+        c.execute("ALTER TABLE products ADD COLUMN price REAL DEFAULT 0.0 NOT NULL CHECK(price >= 0.0)")
+
+        conn.commit()
+        print("Таблица и столбцы успешно созданы")
+    except sqlite3.Error as err:
+        print("Ошибка при создании таблицы:", err)
+
+def add_products(conn):
+    try:
+        c = conn.cursor()
+        products = [
+            ("Лук на развес", 150.50, 10),
+            ("Жидкое мыло с запахом ванили", 75.25, 5),
+            ("Шампунь", 200.0, 8),
+            ("Зубная паста", 80.0, 15),
+            ("Туалетная бумага", 50.0, 20),
+            ("Мыло детское", 120.0, 12),
+            ("Шоколадная плитка", 70.0, 7),
+            ("Сок", 90.0, 9),
+            ("Кофе", 180.0, 6),
+            ("Масло растительное", 100.0, 25),
+            ("Салфетки", 220.0, 3),
+            ("Соль", 85.0, 18),
+            ("Макароны", 65.0, 30),
+            ("Сахар", 40.0, 22),
+            ("Молоко 2%", 70.0, 11)
+        ]
+        c.executemany("INSERT INTO products (product_title, price, quantity) VALUES (?, ?, ?)", products)
+        conn.commit()
+        print("Товары успешно добавлены")
+
+    except sqlite3.Error as err:
+        print("Ошибка при добавлении товаров:", err)
+
+def change_quantity(conn, product_id, new_quantity):
+    try:
+        c = conn.cursor()
+        c.execute("UPDATE products SET quantity = ? WHERE id = ?", (new_quantity, product_id))
+        conn.commit()
+        print(f"Количество товара с id {product_id} успешно изменено")
+    except sqlite3.Error as err:
+        print("Ошибка при изменении количества товара:", err)
+
+def change_price(conn, product_id, new_price):
+    try:
+        c = conn.cursor()
+        c.execute("UPDATE products SET price = ? WHERE id = ?", (new_price, product_id))
+        conn.commit()
+        print(f"Цена товара с id {product_id} успешно изменена")
+    except sqlite3.Error as err:
+        print("Ошибка при изменении цены товара:", err)
+
+def delete_product(conn, product_id):
+    try:
+        c = conn.cursor()
+        c.execute("DELETE FROM products WHERE id = ?", (product_id,))
+        conn.commit()
+        print(f"Товар с id {product_id} успешно удален")
+    except sqlite3.Error as e:
+        print("Ошибка при удалении товара:", e)
+
+def select_all_products(conn):
+
+        c = conn.cursor()
+        c.execute("SELECT * FROM products")
+        rows = c.fetchall()
+        print("Список всех товаров:")
+        for row in rows:
+            print(f"ID: {row[0]}, Название: {row[1]}, Цена: {row[2]}, Количество: {row[3]}")
+
+def select_products_by_criteria(conn, price_limit, quantity_limit):
+    try:
+        c = conn.cursor()
+        c.execute("SELECT * FROM products WHERE price < ? AND quantity > ?", (price_limit, quantity_limit))
+        rows = c.fetchall()
+        print(f"Список товаров с ценой меньше {price_limit} и количеством больше {quantity_limit}:")
+        for row in rows:
+            print(f"ID: {row[0]}, Название: {row[1]}, Цена: {row[2]}, Количество: {row[3]}")
+    except sqlite3.Error as e:
+        print("Ошибка при выборке товаров по критериям:", e)
+
+def search_products_by_title(conn, keyword):
+    try:
+        c = conn.cursor()
+        c.execute("SELECT * FROM products WHERE product_title LIKE ?", ('%' + keyword + '%',))
+        rows = c.fetchall()
+        print(f"Результаты поиска товаров по названию '{keyword}':")
+        for row in rows:
+            print(f"ID: {row[0]}, Название: {row[1]}, Цена: {row[2]}, Количество: {row[3]}")
+    except sqlite3.Error as e:
+        print("Ошибка при поиске товаров по названию:", e)
+
+# Создание базы данных и таблицы
+conn = create_connection('hw.db')
+if conn:
+    create_table(conn)
+    add_products(conn)
+    change_quantity(conn, 1, 15)
+    change_price(conn, 2, 80.50)
+    delete_product(conn, 3)
+    select_all_products(conn)
+    select_products_by_criteria(conn, 100, 5)
+    search_products_by_title(conn, "мыло")
+    conn.close()
+
+
+
+
+
